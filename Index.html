@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+
+<!--
+   Experimental data visualisation example uses published apprenticeship starts data
+ 
+   Contact: Dave Bartholomew 
+   
+   Dave.Bartholomew@education.gov.uk            
+   Data Scientist
+   Data Visualisation & Dissemination Lead 
+   Further Education Statistical Dissemination Team
+   Department for Education
+  -->
+<meta charset="utf-8">
+<style>
+  .bar {
+    fill: blue;
+  }
+
+  .bar:hover {
+    fill: steelblue;
+  }
+
+  .axis text {
+    font: 14px arial;
+  }
+
+  .axis path,
+  .axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+  }
+
+  div.tooltip {	
+    position: absolute;			
+    text-align: center;			
+    width: 60px;					
+    height: 28px;					
+    padding: 2px;				
+    font: 12px sans-serif;		
+    background: lightsteelblue;	
+    border: 0px;		
+    border-radius: 8px;			
+    pointer-events: none;			
+}
+
+</style>
+<body>
+   <div class="DfE_Logo">
+      <img src="DfE.jpg">
+    </div>
+    
+<H1>Apprenticeship Service data (as at 30 June 2017)</H1>
+<H3>There were 9,100 registered apprenticeship service accounts, and 13,500 commitments</H3>
+<H3>entered into the apprenticeship service. Of these, 11,400 were fully agreed.</H3>
+<p>Note: only commitments of 10 or more are shown in the chart.</p>
+
+<select onchange="loadData()" id="metric">
+  <option >Registrations</option>
+  <option >Fully Agreed Commitments</option>
+  <option >Commitments Pending Approval</option>
+</select>
+
+<script type="text/javascript" src="d3.js"></script>
+
+<script>
+
+  var svg = d3.select('body').append('svg')
+              .attr('height', '400')
+              .attr('width', '550');
+
+  var g = svg.append('g')
+    .attr("transform", "translate(50, 20)");
+
+  g.append('g')
+     .attr('class', 'x axis')
+     .attr('transform', 'translate(0, 350)');
+  g.append('g')
+     .attr('class', 'y axis');
+
+  var parseRow = function(row) {
+    return {
+      month: row.Month,
+      number: parseFloat(row.Number)
+    }
+  };
+  var monthIndex = function(monthName) {
+    var Months = {
+      Jan: 1, Feb: 2, Mar: 3, Apr:  4, May:  5, Jun:  6, Jul:  7, Aug:  8, Sep:  9, Oct:  10, Nov:  11, Dec:  12
+    };
+    return months[monthName];
+  }
+// Define the div for the tooltip
+var div = d3.select("body").append("div")	
+    .attr("class", "tooltip")				
+    .style("opacity", 0);
+    
+var loadData = function() {
+  var metric = document.getElementById('metric').selectedOptions[0].text;
+  var dataFile = metric + '.csv'
+  d3.csv(dataFile, parseRow, function(data) {
+    var months = data.map(function(d) { return d.month })
+    var x = d3.scale.ordinal()
+            .rangeRoundBands([0, 400], .1)
+            .domain(months);
+
+    var numbers = data.map(function(d) { return d.number });
+    var y = d3.scale.linear()
+            .range([350, 0])
+            .domain([0, d3.max(numbers)]);
+
+    var rect = g.selectAll('.bar').data(data);
+    rect.enter().append('rect');
+    rect.exit().remove();
+    rect.attr('class', 'bar')
+        .attr('width', x.rangeBand())
+        .attr('height', function(d) { return 350 - y(d.number)})
+        .attr('x', function(d) { return x(d.month) })
+        .attr('y', function(d) { return y(d.number) })
+        .on("mouseover", function(d) {		
+            div.transition()		
+                .duration(1000)		
+                .style("opacity", .9);		
+            div	.html(d.month + "<br/>"  + d.number)	
+                .style("left", (d3.event.pageX - 25) + "px")		
+                .style("top", (d3.event.pageY - 50) + "px")})					
+        .on("mouseout", function(d) {		
+            div.transition()		
+                .duration(2000)		
+                .style("opacity", 0)})
+
+    var xAxis = d3.svg.axis()
+                  .scale(x)
+                  .orient('bottom');
+
+    var yAxis = d3.svg.axis()
+                  .scale(y)
+                  .orient('left')
+                  .tickFormat(d3.format('.0'));
+
+    d3.select('.x.axis').call(xAxis);
+    d3.select('.y.axis').call(yAxis);
+    d3.select('input').on('change', function() {})
+  })
+}
+
+loadData()
+</script>
+</body>
+
+<div> 
+  <p style="font-family: Arial; font-size: 16px"> <strong> Department for Education <strong/> </p> 
+</div>
+
+<div> 
+  <a href="https://www.gov.uk/government/statistics/apprenticeship-service-registrations-and-commitments-to-june-2017"> Data source: Apprenticeship service registrations and commitments to June 2017.</a> 
+</div>
+
+
